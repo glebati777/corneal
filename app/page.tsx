@@ -407,23 +407,13 @@ export default function Page() {
                 <div className="muted small">Основные сценарии работы с интерфейсом</div>
                 <div className="grid" style={{marginTop:18}}>
                   <button className="btn" onClick={openNew}><Plus size={16}/>Добавить пациента</button>
-                  <button className="btn outline" onClick={()=>exportReportёт(selected)}><Download size={16}/>Скачать отчёт PDF</button>
+                  <button className="btn outline" onClick={()=>exportReport(selected)}><Download size={16}/>Скачать отчёт PDF</button>
                   <button className="btn outline" onClick={()=>setPage("analytics")}><BarChart3 size={16}/>Открыть аналитику</button>
                   <button className="btn outline" onClick={()=>setPage("patients")}><UserRound size={16}/>Открыть список пациентов</button>
                 </div>
-                      <strong>Схема роговицы</strong>
-                    </div>
-                    <Eye size={18}/>
-                  </div>
-                  <div className="small muted" style={{marginTop:8}}>Схема делает интерфейс более наглядным и поддерживает аккуратную медицинскую подачу.</div>
-                </div>
+                     
 
-                <div className="softCard glowBlue" style={{marginTop:16}}>
-                  <div className="headerRow">
-                    <div>
-                      <div className="muted tiny">Аналитический модуль</div>
-                      <strong>Демонстрационные блоки AI и ML</strong>
-                    </div>
+               
                     <Activity size={18}/>
                   </div>
                   <div className="small muted" style={{marginTop:8}}>В этой версии показаны демонстрационные прогнозные блоки. Для реального клинического применения потребуется клинический набор данных и отдельная валидация.</div>

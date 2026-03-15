@@ -246,7 +246,7 @@ export default function Page() {
   }),[patients]);
 
   const filteredPatients = useMemo(()=>{
-    let arr = [...patients].filter(p=>[p.id,p.fullName,p.notes].some(v=>String(v).toНизкийerCase().includes(query.toНизкийerCase())));
+    let arr = [...patients].filter(p=>[p.id,p.fullName,p.notes].some(v=>String(v).toLowerCase().includes(query.toLowerCase())));
     if(riskFilter !== "all"){
       arr = arr.filter(p=>{
         const r=calcRisk(p).risk;

@@ -103,7 +103,7 @@ function explanation(p: Patient){
   if(p.rejectionHistory==="yes") items.push("rejection history");
   if(Number(p.il6)>=10) items.push("elevated IL-6");
   if(Number(p.vegf)>=60) items.push("elevated VEGF");
-  return `${items.length ? "Наибольший вклад в ориентировочный риск дают: " + items.join(", ") + "." : "Выраженных факторов повышения риска не выявлено."} Совокупность параметров формирует ${calcRisk(p).level.toНизкийerCase()} профиль риска и требует интерпретации в клиническом контексте.`;
+  return `${items.length ? "Наибольший вклад в ориентировочный риск дают: " + items.join(", ") + "." : "Выраженных факторов повышения риска не выявлено."} Совокупность параметров формирует ${calcRisk(p).level.toLowerCase()} профиль риска и требует интерпретации в клиническом контексте.`;
 }
 function recommendations(p: Patient){
   const r = calcRisk(p).risk;

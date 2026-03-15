@@ -280,8 +280,6 @@ export default function Page() {
 
   return (
     <div className="page">
-  return (
-    <div className="page">
       <aside className="sidebar">
         <div className="brand"><div className="brandIcon"><Eye size={24}/></div><div><div className="brandTitle">Corneal Risk</div><div className="brandSub">Clinical Decision Support</div></div></div>
         <div className="nav">

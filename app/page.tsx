@@ -454,7 +454,7 @@ export default function Page() {
                       <div className="muted tiny">Визуальный модуль</div>
                       <strong>Схема роговицы</strong>
                     </div>
-                    <ScanEye size={18}/>
+                    <Eye size={18}/>
                   </div>
                   <div className="small muted" style={{marginTop:8}}>Схема делает интерфейс более наглядным и поддерживает аккуратную медицинскую подачу.</div>
                 </div>

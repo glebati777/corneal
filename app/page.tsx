@@ -263,7 +263,7 @@ export default function Page() {
 
   if(!user) return <LoginScreen onLogin={setUser} />;
 
-    const alertClass =
+   const alertClass =
     selectedRisk && selectedRisk.risk >= 65
       ? "high"
       : selectedRisk && selectedRisk.risk >= 35
@@ -278,6 +278,8 @@ export default function Page() {
     ["TGF-β", Number(selected?.tgfb || 0)],
   ];
 
+  return (
+    <div className="page">
   return (
     <div className="page">
       <aside className="sidebar">

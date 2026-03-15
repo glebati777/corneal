@@ -263,8 +263,20 @@ export default function Page() {
 
   if(!user) return <LoginScreen onLogin={setUser} />;
 
-  const alertClass = selectedRisk && selectedRisk.risk >= 65 ? "high" : selectedRisk && selectedRisk.risk >= 35 ? "mid" : "low";
-  const heatItems:[string,number][] = [["IL-1",Number(selected?.il1||0)],["IL-6",Number(selected?.il6||0)],["TNF-α",Number(selected?.tnf||0)],["VEGF",Number(selected?.vegf||0)],["TGF-β",Number(selected?.tgfb||0)]];
+    const alertClass =
+    selectedRisk && selectedRisk.risk >= 65
+      ? "high"
+      : selectedRisk && selectedRisk.risk >= 35
+      ? "mid"
+      : "low";
+
+  const heatItems: [string, number][] = [
+    ["IL-1", Number(selected?.il1 || 0)],
+    ["IL-6", Number(selected?.il6 || 0)],
+    ["TNF-α", Number(selected?.tnf || 0)],
+    ["VEGF", Number(selected?.vegf || 0)],
+    ["TGF-β", Number(selected?.tgfb || 0)],
+  ];
 
   return (
     <div className="page">

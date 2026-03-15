@@ -1,0 +1,23 @@
+{
+  "name": "corneal-risk-platform-v2",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start"
+  },
+  "dependencies": {
+    "next": "14.2.25",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "lucide-react": "0.462.0",
+    "recharts": "2.12.7"
+  },
+  "devDependencies": {
+    "typescript": "5.6.2",
+    "@types/react": "18.3.3",
+    "@types/react-dom": "18.3.0",
+    "@types/node": "22.7.4"
+  }
+}

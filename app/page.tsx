@@ -550,7 +550,6 @@ export default function Page() {
     setSelectedId(next[0]?.id || "");
   };
 
-  if (!user) return <LoginScreen onLogin={setUser} />;
 
   const filteredPatients = useMemo(() => {
     let arr = [...patients].filter((p) =>
@@ -597,6 +596,8 @@ export default function Page() {
     ["TGF-β", Number(selected?.tgfb || 0)],
   ];
 
+  if (!user) return <LoginScreen onLogin={setUser} />;
+  
   return (
     <div className="page">
       <aside className="sidebar">

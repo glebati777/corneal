@@ -1,0 +1,15 @@
+node_modules/
+.next/
+.tsbuildinfo
+next-env.d.ts
+
+# Логи (если есть)
+*.log
+
+# Системные файлы (если есть)
+.DS_Store
+Thumbs.db
+
+# Настройки IDE (если используете)
+.vscode/
+.idea/

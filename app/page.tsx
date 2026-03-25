@@ -54,6 +54,7 @@ type Patient = {
   sex: "М" | "Ж";
   graftType: "primary" | "repeat";
   surgeryType: "PKP" | "DMEK" | "DSAEK" | "DALK";
+  smoking: "never" | "former" | "current";
   visits: Visit[];
 };
 
@@ -67,6 +68,7 @@ const starterPatients: Patient[] = [
     sex: "М",
     graftType: "repeat",
     surgeryType: "PKP",
+    smoking: "current",
     visits: [
       { id: "V-001-1", date: "2026-01-10", il1: 9, il6: 13, tnf: 7, vegf: 72, tgfb: 41, neovascularization: "moderate", priorInflammation: "yes", rejectionHistory: "yes", notes: "Послеоперационное наблюдение. Сохраняется воспалительный компонент." },
       { id: "V-001-2", date: "2026-02-22", il1: 10, il6: 15, tnf: 8, vegf: 84, tgfb: 44, neovascularization: "severe", priorInflammation: "yes", rejectionHistory: "yes", notes: "Усиление неоваскуляризации. Нужен более частый контроль." },
@@ -80,6 +82,7 @@ const starterPatients: Patient[] = [
     sex: "Ж",
     graftType: "primary",
     surgeryType: "DMEK",
+    smoking: "never",
     visits: [
       { id: "V-002-1", date: "2026-02-01", il1: 4, il6: 5, tnf: 3, vegf: 26, tgfb: 20, neovascularization: "none", priorInflammation: "no", rejectionHistory: "no", notes: "Ранний послеоперационный контроль." },
       { id: "V-002-2", date: "2026-03-12", il1: 3, il6: 4, tnf: 3, vegf: 22, tgfb: 18, neovascularization: "none", priorInflammation: "no", rejectionHistory: "no", notes: "Спокойное течение послеоперационного периода." },
@@ -92,6 +95,7 @@ const starterPatients: Patient[] = [
     sex: "М",
     graftType: "repeat",
     surgeryType: "DALK",
+    smoking: "former",
     visits: [
       { id: "V-003-1", date: "2026-02-08", il1: 6, il6: 8, tnf: 5, vegf: 49, tgfb: 29, neovascularization: "moderate", priorInflammation: "yes", rejectionHistory: "no", notes: "Сохраняется умеренная воспалительная активность." },
       { id: "V-003-2", date: "2026-03-08", il1: 7, il6: 10, tnf: 6, vegf: 61, tgfb: 35, neovascularization: "moderate", priorInflammation: "yes", rejectionHistory: "no", notes: "Нужна промежуточная оценка лабораторных маркеров и клинической динамики." },
@@ -104,6 +108,7 @@ const starterPatients: Patient[] = [
     sex: "Ж",
     graftType: "primary",
     surgeryType: "DSAEK",
+    smoking: "never",
     visits: [
       { id: "V-004-1", date: "2026-02-15", il1: 4, il6: 6, tnf: 4, vegf: 34, tgfb: 24, neovascularization: "moderate", priorInflammation: "no", rejectionHistory: "no", notes: "Плановый контроль после операции." },
       { id: "V-004-2", date: "2026-03-11", il1: 5, il6: 7, tnf: 4, vegf: 40, tgfb: 26, neovascularization: "moderate", priorInflammation: "no", rejectionHistory: "no", notes: "Плановое наблюдение после эндотелиальной кератопластики." },
@@ -118,6 +123,7 @@ const emptyPatient = {
   sex: "М" as "М" | "Ж",
   graftType: "primary" as "primary" | "repeat",
   surgeryType: "PKP" as "PKP" | "DMEK" | "DSAEK" | "DALK",
+  smoking: "never" as "never" | "former" | "current",
 };
 
 const emptyVisit: Omit<Visit, "id"> = {
@@ -159,6 +165,10 @@ function riskScoreFromVisit(patient?: Patient, visit?: Visit) {
   if (visit.neovascularization === "severe") score += 24;
   if (visit.priorInflammation === "yes") score += 12;
   if (visit.rejectionHistory === "yes") score += 18;
+
+  if (patient.smoking === "current") score += 15;
+  if (patient.smoking === "former") score += 5;
+
   score += clamp(visit.il1 / 2, 0, 10);
   score += clamp(visit.il6 / 2, 0, 12);
   score += clamp(visit.tnf / 2, 0, 10);
@@ -182,6 +192,8 @@ function calcMlForecast(patient?: Patient) {
   const x =
     -4.2 +
     (patient.graftType === "repeat" ? 0.95 : 0) +
+    (patient.smoking === "current" ? 0.7 : 0) +
+    (patient.smoking === "former" ? 0.25 : 0) +
     (visit.neovascularization === "moderate" ? 0.7 : 0) +
     (visit.neovascularization === "severe" ? 1.25 : 0) +
     (visit.priorInflammation === "yes" ? 0.62 : 0) +
@@ -207,6 +219,10 @@ function makeExplanation(patient?: Patient) {
   if (visit.neovascularization === "severe") items.push("выраженная неоваскуляризация");
   if (visit.priorInflammation === "yes") items.push("воспалительный анамнез");
   if (visit.rejectionHistory === "yes") items.push("отторжение в анамнезе");
+
+  if (patient.smoking === "current") items.push("активное курение");
+  if (patient.smoking == "former") items.push("бывший курильщик");
+
   if (visit.il1 >= 8) items.push("повышение IL-1");
   if (visit.il6 >= 10) items.push("повышение IL-6");
   if (visit.vegf >= 60) items.push("повышение VEGF");
@@ -221,6 +237,8 @@ function explainFactors(patient?: Patient) {
     { label: "Неоваскуляризация", value: visit.neovascularization === "severe" ? 24 : visit.neovascularization === "moderate" ? 14 : 0 },
     { label: "Воспалительный анамнез", value: visit.priorInflammation === "yes" ? 12 : 0 },
     { label: "Отторжение в анамнезе", value: visit.rejectionHistory === "yes" ? 18 : 0 },
+    { label: "Активное курение", value: patient.smoking === "current" ? 15 : 0 },
+    { label: "Бывший курильщик", value: patient.smoking === "former" ? 5 : 0 },
     { label: "IL-6", value: clamp(visit.il6 / 2, 0, 12) },
     { label: "VEGF", value: clamp(visit.vegf / 10, 0, 12) },
   ].filter((r) => r.value > 0).sort((a, b) => b.value - a.value);
@@ -268,8 +286,8 @@ function aiClinicalReport(patient?: Patient) {
   const trendText = trend > 0
     ? "Риск демонстрирует нарастание по сравнению с предыдущим визитом."
     : trend < 0
-    ? "Риск снизился по сравнению с предыдущим визитом."
-    : "Существенного изменения риска между последними визитами не выявлено.";
+      ? "Риск снизился по сравнению с предыдущим визитом."
+      : "Существенного изменения риска между последними визитами не выявлено.";
 
   return `AI Clinical Report: у пациента ${patient.fullName} ориентировочный риск составляет ${risk.risk}%, а прогноз вероятности отторжения — ${ml.probability}%. ${trendText} Ключевые факторы: ${makeExplanation(patient)} Рекомендуется интерпретировать результат вместе с клинической картиной, динамикой трансплантата и лабораторными показателями.`;
 }
@@ -414,15 +432,19 @@ export default function Page() {
       if (raw) {
         const parsed = JSON.parse(raw);
         if (parsed?.patients?.length) {
+          const upgradedPatients = parsed.patients.map((p: any) => ({
+            ...p,
+            smoking: p.smoking || "never",
+          }));
           setPatients(parsed.patients);
           setSelectedId(parsed.patients[0].id);
         }
       }
-    } catch {}
+    } catch { }
   }, []);
 
   useEffect(() => {
-    try { localStorage.setItem(STORAGE_KEY, JSON.stringify({ patients })); } catch {}
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify({ patients })); } catch { }
   }, [patients]);
 
   const selected = useMemo(() => patients.find((p) => p.id === selectedId) || patients[0], [patients, selectedId]);
@@ -711,6 +733,7 @@ export default function Page() {
                     ["ID", selected.id],
                     ["Возраст", `${selected.age} лет`],
                     ["Пол", selected.sex],
+                    ["Курение", selected.smoking === "current" ? "Активный курильщик" : selected.smoking === "former" ? "Бывший курильщик" : "Не курит"],
                     ["Тип трансплантации", selected.graftType === "repeat" ? "Повторная" : "Первичная"],
                     ["Вид операции", surgeryLabel(selected.surgeryType)],
                     ["Неоваскуляризация", latestVisit.neovascularization === "severe" ? "Выраженная" : latestVisit.neovascularization === "moderate" ? "Умеренная" : "Нет"],
@@ -760,9 +783,9 @@ export default function Page() {
             <div className="card glass">
               <h2>Patient risk stratification</h2>
               <div className="bucketList" style={{ marginTop: 14 }}>
-                <div className="bucketRow"><div className="headerRow"><span>High risk</span><strong>{stats.high}</strong></div><div className="miniBar"><div className="miniBarFill" style={{ width: `${Math.min((stats.high / Math.max(stats.total,1)) * 100, 100)}%` }} /></div></div>
-                <div className="bucketRow"><div className="headerRow"><span>Medium risk</span><strong>{stats.moderate}</strong></div><div className="miniBar"><div className="miniBarFill" style={{ width: `${Math.min((stats.moderate / Math.max(stats.total,1)) * 100, 100)}%` }} /></div></div>
-                <div className="bucketRow"><div className="headerRow"><span>Low risk</span><strong>{stats.low}</strong></div><div className="miniBar"><div className="miniBarFill" style={{ width: `${Math.min((stats.low / Math.max(stats.total,1)) * 100, 100)}%` }} /></div></div>
+                <div className="bucketRow"><div className="headerRow"><span>High risk</span><strong>{stats.high}</strong></div><div className="miniBar"><div className="miniBarFill" style={{ width: `${Math.min((stats.high / Math.max(stats.total, 1)) * 100, 100)}%` }} /></div></div>
+                <div className="bucketRow"><div className="headerRow"><span>Medium risk</span><strong>{stats.moderate}</strong></div><div className="miniBar"><div className="miniBarFill" style={{ width: `${Math.min((stats.moderate / Math.max(stats.total, 1)) * 100, 100)}%` }} /></div></div>
+                <div className="bucketRow"><div className="headerRow"><span>Low risk</span><strong>{stats.low}</strong></div><div className="miniBar"><div className="miniBarFill" style={{ width: `${Math.min((stats.low / Math.max(stats.total, 1)) * 100, 100)}%` }} /></div></div>
               </div>
             </div>
 
@@ -813,9 +836,45 @@ export default function Page() {
         </div>
       </main>
 
-      {patientModal && <div className="modalBg"><div className="modal glass"><div className="headerRow"><div><h2 style={{ margin: 0, color: "#fff" }}>Новый пациент</h2><div className="muted small">Создание карточки пациента для дальнейшего наблюдения.</div></div><button className="btn outline" onClick={() => setPatientModal(false)}><X size={16} /></button></div><div className="grid g3" style={{ marginTop: 20 }}><div><label className="label">ID пациента</label><input className="input" value={patientForm.id} onChange={(e) => setPatientForm({ ...patientForm, id: e.target.value })} /></div><div><label className="label">ФИО</label><input className="input" value={patientForm.fullName} onChange={(e) => setPatientForm({ ...patientForm, fullName: e.target.value })} /></div><div><label className="label">Возраст</label><input className="input" type="number" value={patientForm.age} onChange={(e) => setPatientForm({ ...patientForm, age: Number(e.target.value) })} /></div><div><label className="label">Пол</label><select className="select" value={patientForm.sex} onChange={(e) => setPatientForm({ ...patientForm, sex: e.target.value as "М" | "Ж" })}><option value="М">М</option><option value="Ж">Ж</option></select></div><div><label className="label">Тип трансплантации</label><select className="select" value={patientForm.graftType} onChange={(e) => setPatientForm({ ...patientForm, graftType: e.target.value as "primary" | "repeat" })}><option value="primary">Первичная</option><option value="repeat">Повторная</option></select></div><div><label className="label">Вид операции</label><select className="select" value={patientForm.surgeryType} onChange={(e) => setPatientForm({ ...patientForm, surgeryType: e.target.value as Patient["surgeryType"] })}><option value="PKP">PKP</option><option value="DALK">DALK</option><option value="DSAEK">DSAEK</option><option value="DMEK">DMEK</option></select></div></div><div style={{ display: "flex", justifyContent: "end", gap: 10, marginTop: 18 }}><button className="btn outline" onClick={() => setPatientModal(false)}>Отмена</button><button className="btn" onClick={savePatient}>Сохранить пациента</button></div></div></div>}
+      {patientModal && <div className="modalBg"><div className="modal glass"><div className="headerRow"><div><h2 style={{ margin: 0, color: "#fff" }}>Новый пациент</h2><div className="muted small">Создание карточки пациента для дальнейшего наблюдения.</div></div><button className="btn outline" onClick={() => setPatientModal(false)}><X size={16} /></button></div><div className="grid g3" style={{ marginTop: 20 }}><div><label className="label">ID пациента</label><input className="input" value={patientForm.id} onChange={(e) => setPatientForm({ ...patientForm, id: e.target.value })} /></div><div><label className="label">ФИО</label><input className="input" value={patientForm.fullName} onChange={(e) => setPatientForm({ ...patientForm, fullName: e.target.value })} /></div><div><label className="label">Возраст</label><input className="input" type="number" value={patientForm.age} onChange={(e) => setPatientForm({ ...patientForm, age: Number(e.target.value) })} /></div><div><label className="label">Пол</label><select className="select" value={patientForm.sex} onChange={(e) => setPatientForm({ ...patientForm, sex: e.target.value as "М" | "Ж" })}><option value="М">М</option><option value="Ж">Ж</option></select></div>
+        <div>
+          <label className="label">Курение</label>
+          <select className="select" value={patientForm.smoking} onChange={(e) => setPatientForm({
+            ...patientForm,
+            smoking: e.target.value as "never" | "former" | "current"
+          })}>
+            <option value="never">Не курит</option>
+            <option value="former">Бывший курильщик</option>
+            <option value="current">Активный курильщик</option>
+          </select>
+        </div>
+        <div>
+          <label className="label">Тип трансплантации</label>
+          <select className="select" value={patientForm.graftType} onChange={(e) => setPatientForm({
+            ...patientForm,
+            graftType: e.target.value as "primary" | "repeat"
+          })}>
+            <option value="primary">Первичная</option>
+            <option value="repeat">Повторная</option>
+          </select>
+        </div>
+        <div>
+          <label className="label">Вид операции</label>
+          <select className="select" value={patientForm.surgeryType} onChange={(e) => setPatientForm({
+            ...patientForm,
+            surgeryType: e.target.value as Patient["surgeryType"]
+          })}>
+            <option value="PKP">PKP</option>
+            <option value="DALK">DALK</option>
+            <option value="DSAEK">DSAEK</option>
+            <option value="DMEK">DMEK</option>
+          </select>
+        </div>
+      </div>
+      <div style={{ display: "flex", justifyContent: "end", gap: 10, marginTop: 18 }}><button className="btn outline" onClick={() => setPatientModal(false)}>Отмена</button><button className="btn" onClick={savePatient}>Сохранить пациента</button></div></div></div>}
 
       {visitModal && selected && <div className="modalBg"><div className="modal glass"><div className="headerRow"><div><h2 style={{ margin: 0, color: "#fff" }}>Новый визит</h2><div className="muted small">Добавление новых значений маркеров с автоматическим перерасчётом риска.</div></div><button className="btn outline" onClick={() => setVisitModal(false)}><X size={16} /></button></div><div className="grid g3" style={{ marginTop: 20 }}><div><label className="label">Дата визита</label><input className="input" type="date" value={visitForm.date} onChange={(e) => setVisitForm({ ...visitForm, date: e.target.value })} /></div><div><label className="label">IL-1</label><input className="input" type="number" value={visitForm.il1} onChange={(e) => setVisitForm({ ...visitForm, il1: Number(e.target.value) })} /></div><div><label className="label">IL-6</label><input className="input" type="number" value={visitForm.il6} onChange={(e) => setVisitForm({ ...visitForm, il6: Number(e.target.value) })} /></div><div><label className="label">TNF-α</label><input className="input" type="number" value={visitForm.tnf} onChange={(e) => setVisitForm({ ...visitForm, tnf: Number(e.target.value) })} /></div><div><label className="label">VEGF</label><input className="input" type="number" value={visitForm.vegf} onChange={(e) => setVisitForm({ ...visitForm, vegf: Number(e.target.value) })} /></div><div><label className="label">TGF-β</label><input className="input" type="number" value={visitForm.tgfb} onChange={(e) => setVisitForm({ ...visitForm, tgfb: Number(e.target.value) })} /></div><div><label className="label">Неоваскуляризация</label><select className="select" value={visitForm.neovascularization} onChange={(e) => setVisitForm({ ...visitForm, neovascularization: e.target.value as Visit["neovascularization"] })}><option value="none">Нет</option><option value="moderate">Умеренная</option><option value="severe">Выраженная</option></select></div><div><label className="label">Предшествующее воспаление</label><select className="select" value={visitForm.priorInflammation} onChange={(e) => setVisitForm({ ...visitForm, priorInflammation: e.target.value as Visit["priorInflammation"] })}><option value="no">Нет</option><option value="yes">Да</option></select></div><div><label className="label">Отторжение в анамнезе</label><select className="select" value={visitForm.rejectionHistory} onChange={(e) => setVisitForm({ ...visitForm, rejectionHistory: e.target.value as Visit["rejectionHistory"] })}><option value="no">Нет</option><option value="yes">Да</option></select></div><div style={{ gridColumn: "1 / -1" }}><label className="label">Клинические заметки</label><textarea className="textarea" value={visitForm.notes} onChange={(e) => setVisitForm({ ...visitForm, notes: e.target.value })} /></div></div><div style={{ display: "flex", justifyContent: "end", gap: 10, marginTop: 18 }}><button className="btn outline" onClick={() => setVisitModal(false)}>Отмена</button><button className="btn" onClick={saveVisit}>Сохранить визит</button></div></div></div>}
+
     </div>
   );
 }

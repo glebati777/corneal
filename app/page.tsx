@@ -426,26 +426,58 @@ export default function Page() {
   const [patientForm, setPatientForm] = useState(emptyPatient);
   const [visitForm, setVisitForm] = useState(emptyVisit);
 
-  useEffect(() => {
+
+  const seedInitialPatients = async () => {
     try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        if (parsed?.patients?.length) {
-          const upgradedPatients = parsed.patients.map((p: any) => ({
-            ...p,
-            smoking: p.smoking || "never",
-          }));
-          setPatients(parsed.patients);
-          setSelectedId(parsed.patients[0].id);
+      for (const patient of starterPatients) {
+        const response = await fetch('/api/patients', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(patient)
+        });
+        if (!response.ok) {
+          console.error('Failed to seed patient:', patient.id);
         }
       }
-    } catch { }
-  }, []);
+      // После загрузки всех, получаем обновлённый список
+      const response = await fetch('/api/patients');
+      const date =await response.json();
+      setPatients(date);
+      setSelectedId(date[0]?.id || "");
+    } catch (error) {
+      console.error('Error seeding patients:', error);
+    }
+  };
 
   useEffect(() => {
-    try { localStorage.setItem(STORAGE_KEY, JSON.stringify({ patients })); } catch { }
-  }, [patients]);
+    // Загружаем пациентов с сервера при загрузке страницы
+    const fetchPatents = async () => {
+      try {
+        const response = await fetch('/api/patients');
+        if (response.ok) {
+          const date = await response.json();
+          if (date && date.lenght > 0) {
+            setPatients(date);
+            setSelectedId(date[0].id);
+          } else {
+            // Если на сервере нет данных, загружаем стартовых пациентов
+            await seedInitialPatients();
+          }
+        } else {
+          console.error('Failed to fetch patients');
+          // Если API не доступен, используем стартовых пациентов
+          setPatients(starterPatients);
+          setSelectedId(starterPatients[0].id);
+        }
+      } catch (error) {
+        console.error('Error fetching patients:', error);
+        setPatients(starterPatients);
+        setSelectedId(starterPatients[0].id);
+      }
+    };
+
+    fetchPatents();
+  }, []);
 
   const selected = useMemo(() => patients.find((p) => p.id === selectedId) || patients[0], [patients, selectedId]);
   const latestVisit = useMemo(() => getLatestVisit(selected), [selected]);
@@ -541,26 +573,96 @@ export default function Page() {
     setPatientModal(true);
   };
 
-  const savePatient = () => {
+  const savePatient = async () => {
     if (!patientForm.id || !patientForm.fullName) return;
-    const newPatient: Patient = { ...patientForm, visits: [{ ...emptyVisit, id: `V-${patientForm.id}-1`, notes: "Первичный визит после внесения пациента в систему." }] };
-    setPatients((prev) => [newPatient, ...prev]);
-    setSelectedId(newPatient.id);
-    setPatientModal(false);
+    
+    // Создаём первого визита для нового пациента
+    const firstVisit = {
+      ...emptyVisit,
+      id: `V-${patientForm.id}-1`,
+      notes: "Первичный визит после внесения пациента в систему."
+    };
+    
+    const newPatient: Patient = {
+      ...patientForm,
+      visits: [firstVisit]
+    };
+    
+    try {
+      const response = await fetch('/api/patients', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newPatient)
+      });
+      
+      if (response.ok) {
+        const savedPatient = await response.json();
+        // Обновляем локальный список пациентов
+        setPatients((prev) => [savedPatient, ...prev]);
+        setSelectedId(savedPatient.id);
+        setPatientModal(false);
+      } else {
+        console.error('Failed to save patient');
+      }
+    } catch (error) {
+      console.error('Error saving patient:', error);
+    }
   };
 
-  const saveVisit = () => {
+  const saveVisit = async () => {
     if (!selected) return;
-    const newVisit: Visit = { ...visitForm, id: `V-${selected.id}-${selected.visits.length + 1}` };
-    setPatients((prev) => prev.map((p) => (p.id === selected.id ? { ...p, visits: [...p.visits, newVisit] } : p)));
-    setVisitForm(emptyVisit);
-    setVisitModal(false);
+    
+    const newVisit: Visit = {
+      ...visitForm,
+      id: `V-${selected.id}-${selected.visits.length + 1}`
+    };
+    
+    // Обновляем пациента с новым визитом
+    const updatedPatient = {
+      ...selected,
+      visits: [...selected.visits, newVisit]
+    };
+    
+    try {
+      // PUT запрос для обновления пациента
+      const response = await fetch(`/api/patients/${selected.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updatedPatient)
+      });
+      
+      if (response.ok) {
+        const updated = await response.json();
+        // Обновляем локальный список
+        setPatients((prev) =>
+          prev.map((p) => (p.id === selected.id ? updated : p))
+        );
+        setVisitForm(emptyVisit);
+        setVisitModal(false);
+      } else {
+        console.error('Failed to save visit');
+      }
+    } catch (error) {
+      console.error('Error saving visit:', error);
+    }
   };
 
-  const removePatient = (id: string) => {
-    const next = patients.filter((p) => p.id !== id);
-    setPatients(next);
-    setSelectedId(next[0]?.id || "");
+  const removePatient = async (id: string) => {
+    try {
+      const response = await fetch(`/api/patients/${id}`, {
+        method: 'DELETE',
+      });
+      
+      if (response.ok) {
+        const next = patients.filter((p) => p.id !== id);
+        setPatients(next);
+        setSelectedId(next[0]?.id || "");
+      } else {
+        console.error('Failed to delete patient');
+      }
+    } catch (error) {
+      console.error('Error deleting patient:', error);
+    }
   };
 
   if (!user) return <LoginScreen onLogin={setUser} />;
